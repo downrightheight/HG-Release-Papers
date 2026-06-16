@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hellgate Prison Release Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #ddd;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      display: flex;
+      gap: 25px;
+      flex-wrap: wrap;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+    .form {
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 8px;
+      width: 380px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      background: #222;
+      color: #ddd;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+    button {
+      background: #800000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover { background: #a00000; }
+    canvas {
+      border: 3px solid #444;
+      background: #000;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
+    .advanced { margin-top: 15px; }
+    .advanced h3 { margin: 10px 0 5px; color: #aaa; }
+  </style>
+</head>
+<body>
+  <h1 style="text-align:center; color:#c00;">HELLGATE PRISON — Release Papers Generator</h1>
+
+  <div class="container">
+    <!-- Controls -->
+    <div class="form">
+      <h2>Prisoner Info</h2>
+      <label>Prisoner Name</label>
+      <input type="text" id="prisoner" value="Luna Voss">
+
+      <label>Prisoner Reg Number</label>
+      <input type="text" id="reg" value="HG-247-1337">
+
+      <label>Date of Release</label>
+      <input type="text" id="date" value="June 16, 2026">
+
+      <label>Signature Name</label>
+      <input type="text" id="signature" value="Emma O'Neil">
+
+      <hr>
+
+      <h2>Styling & QR</h2>
+      <label>Font Family</label>
+      <select id="fontFamily">
+        <option value="Arial">Arial</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Times New Roman">Times New Roman</option>
+        <option value="Courier New">Courier New</option>
+        <option value="Impact">Impact</option>
+      </select>
+
+      <button onclick="generateImage()">Generate Preview</button>
+      <button onclick="downloadImage()">Download 1024×1024 PNG</button>
+
+      <div class="advanced">
+        <h3>Advanced Positioning</h3>
+        <small>Adjust as needed</small>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <label>Name X</label><input type="number" id="nameX" value="520">
+          <label>Name Y</label><input type="number" id="nameY" value="280">
+          <label>Reg X</label><input type="number" id="regX" value="520">
+          <label>Reg Y</label><input type="number" id="regY" value="340">
+          <label>Date X</label><input type="number" id="dateX" value="520">
+          <label>Date Y</label><input type="number" id="dateY" value="620">
+          <label>Signature X</label><input type="number" id="sigX" value="180">
+          <label>Signature Y</label><input type="number" id="sigY" value="820">
+        </div>
+      </div>
+    </div>
+
+    <!-- Canvas -->
+    <canvas id="canvas" width="1024" height="1024"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let bgImage = new Image();
+
+    // Replace with your cleaned background URL or local path
+    bgImage.src = 'hellgate-background.png'; // ← Put your 1024x1024 background here
+
+    bgImage.onload = () => generateImage();
+
+    function generateImage() {
+      ctx.clearRect(0, 0, 1024, 1024);
+      ctx.drawImage(bgImage, 0, 0, 1024, 1024);
+
+      const prisoner = document.getElementById('prisoner').value;
+      const reg = document.getElementById('reg').value;
+      const date = document.getElementById('date').value;
+      const signature = document.getElementById('signature').value;
+      const fontFamily = document.getElementById('fontFamily').value;
+
+      // Get positions
+      const nameX = parseInt(document.getElementById('nameX').value);
+      const nameY = parseInt(document.getElementById('nameY').value);
+      const regX = parseInt(document.getElementById('regX').value);
+      const regY = parseInt(document.getElementById('regY').value);
+      const dateX = parseInt(document.getElementById('dateX').value);
+      const dateY = parseInt(document.getElementById('dateY').value);
+      const sigX = parseInt(document.getElementById('sigX').value);
+      const sigY = parseInt(document.getElementById('sigY').value);
+
+      ctx.fillStyle = '#000000';
+      ctx.textBaseline = 'top';
+
+      // Prisoner Name
+      ctx.font = `bold 48px ${fontFamily}`;
+      ctx.fillText(prisoner, nameX, nameY);
+
+      // Reg Number
+      ctx.font = `42px ${fontFamily}`;
+      ctx.fillText(reg, regX, regY);
+
+      // Date
+      ctx.font = `38px ${fontFamily}`;
+      ctx.fillText(date, dateX, dateY);
+
+      // Signature
+      ctx.font = `italic 58px "Brush Script MT", cursive`;
+      ctx.fillText(signature, sigX, sigY);
+
+      // Printed name + title
+      ctx.font = `28px ${fontFamily}`;
+      ctx.fillText("Emma O'Neil", sigX, sigY + 85);
+      ctx.fillText("Hellgate Prison Release Officer", sigX, sigY + 115);
+
+      // Generate QR Code
+      generateQRCode(prisoner, reg, date);
+    }
+
+    function generateQRCode(name, reg, date) {
+      // Clear previous QR if exists
+      const oldQR = document.getElementById('qrContainer');
+      if (oldQR) oldQR.remove();
+
+      // Create temporary container
+      const qrDiv = document.createElement('div');
+      qrDiv.id = 'qrContainer';
+      qrDiv.style.position = 'absolute';
+      qrDiv.style.left = '-9999px';
+      document.body.appendChild(qrDiv);
+
+      new QRCode(qrDiv, {
+        text: `Prisoner: ${name}\nReg: ${reg}\nRelease Date: ${date}`,
+        width: 180,
+        height: 180,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      // Draw QR onto canvas after generation
+      setTimeout(() => {
+        const qrCanvas = qrDiv.querySelector('canvas');
+        if (qrCanvas) {
+          ctx.drawImage(qrCanvas, 720, 680, 180, 180);
+        }
+        qrDiv.remove();
+      }, 100);
+    }
+
+    function downloadImage() {
+      const link = document.createElement('a');
+      const name = document.getElementById('prisoner').value.replace(/[^a-zA-Z0-9]/g, '_');
+      link.download = `Hellgate_Release_${name}.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+    }
+
+    // Auto-generate on input change
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input', generateImage);
+    });
+  </script>
+</body>
+</html>
