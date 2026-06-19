@@ -97,16 +97,16 @@
         <h3>Advanced Positioning</h3>
         <small>Adjust as needed</small>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          <label>Name X</label><input type="number" id="nameX" value="520">
-          <label>Name Y</label><input type="number" id="nameY" value="256">
+          <label>Name X</label><input type="number" id="nameX" value="536">
+          <label>Name Y</label><input type="number" id="nameY" value="264">
           <label>Reg X</label><input type="number" id="regX" value="536">
           <label>Reg Y</label><input type="number" id="regY" value="209">
-          <label>Date X</label><input type="number" id="dateX" value="601">
-          <label>Date Y</label><input type="number" id="dateY" value="483">
+          <label>Date X</label><input type="number" id="dateX" value="602">
+          <label>Date Y</label><input type="number" id="dateY" value="490">
           <label>Signature X</label><input type="number" id="sigX" value="72">
           <label>Signature Y</label><input type="number" id="sigY" value="820">
-          <label>Days X</label><input type="number" id="dayX" value="620">
-          <label>Days Y</label><input type="number" id="dayY" value="460">
+          <label>Days X</label><input type="number" id="dayX" value="602">
+          <label>Days Y</label><input type="number" id="dayY" value="547">
         </div>
       </div>
     </div>
@@ -337,7 +337,7 @@
       setTimeout(() => {
         const qrCanvas = qrDiv.querySelector('canvas');
         if (qrCanvas) {
-          tctx.drawImage(qrCanvas, 550, 680, 150, 150);
+          tctx.drawImage(qrCanvas, 520, 620, 150, 150);
         }
         qrDiv.remove();
 
