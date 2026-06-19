@@ -40,10 +40,16 @@
       cursor: pointer;
     }
     button:hover { background: #a00000; }
+    /* Responsive HiDPI-aware canvas: keep 1:1 aspect ratio while allowing layout flexibility */
     canvas {
+      width: 100%;
+      max-width: 1024px;
+      height: auto;
+      aspect-ratio: 1/1;
       border: 3px solid #444;
       background: #000;
       box-shadow: 0 0 20px rgba(0,0,0,0.8);
+      flex: 1 1 1024px; /* allow canvas to grow/shrink in the flex container */
     }
     .advanced { margin-top: 15px; }
     .advanced h3 { margin: 10px 0 5px; color: #aaa; }
@@ -118,9 +124,42 @@
 
     bgImage.onload = () => generateImage();
 
+    // Resize the canvas backing store to match its displayed size and devicePixelRatio
+    function resizeCanvasForDisplay(canvas, ctx) {
+      const dpr = window.devicePixelRatio || 1;
+      // clientWidth/clientHeight are the CSS pixel size
+      const displayWidth = Math.max(1, Math.round(canvas.clientWidth));
+      const displayHeight = Math.max(1, Math.round(canvas.clientHeight));
+      const targetWidth = Math.round(displayWidth * dpr);
+      const targetHeight = Math.round(displayHeight * dpr);
+
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        // Map CSS pixel coordinates to the backing store (so drawing commands use CSS px)
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      } else {
+        // still ensure transform is correct
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      return { displayWidth, displayHeight, dpr };
+    }
+
     function generateImage() {
-      ctx.clearRect(0, 0, 1024, 1024);
-      ctx.drawImage(bgImage, 0, 0, 1024, 1024);
+      // ensure canvas internal size matches CSS size (and DPR) and get display size
+      const { displayWidth, displayHeight } = resizeCanvasForDisplay(canvas, ctx);
+
+      // Clear using CSS-coordinates (transform maps them correctly)
+      ctx.clearRect(0, 0, displayWidth, displayHeight);
+
+      // Draw background scaled to current displayed size
+      if (bgImage.complete) {
+        ctx.drawImage(bgImage, 0, 0, displayWidth, displayHeight);
+      } else {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, displayWidth, displayHeight);
+      }
 
       const prisoner = document.getElementById('prisoner').value;
       const reg = document.getElementById('reg').value;
@@ -129,7 +168,7 @@
       const days = document.getElementById('days').value;
       const fontFamily = document.getElementById('fontFamily').value;
 
-      // Get positions
+      // Get positions (these are stored assuming a 1024x1024 layout)
       const nameX = parseInt(document.getElementById('nameX').value);
       const nameY = parseInt(document.getElementById('nameY').value);
       const regX = parseInt(document.getElementById('regX').value);
@@ -141,39 +180,42 @@
       const dayX = parseInt(document.getElementById('dayX').value);
       const dayY = parseInt(document.getElementById('dayY').value);
 
+      // Scale factor from the design (1024) to the current display size
+      const scale = displayWidth / 1024;
+
       ctx.fillStyle = '#000000';
       ctx.textBaseline = 'top';
 
-      // Prisoner Name
-      ctx.font = `italic 32px ${fontFamily}`;
-      ctx.fillText(prisoner, nameX, nameY);
+      // Prisoner Name (scale font sizes and positions)
+      ctx.font = `italic ${32 * scale}px ${fontFamily}`;
+      ctx.fillText(prisoner, nameX * scale, nameY * scale);
 
       // Reg Number
-      ctx.font = `42px ${fontFamily}`;
-      ctx.fillText(reg, regX, regY);
+      ctx.font = `${42 * scale}px ${fontFamily}`;
+      ctx.fillText(reg, regX * scale, regY * scale);
 
       // Date
-      ctx.font = `30px ${fontFamily}`;
-      ctx.fillText(date, dateX, dateY);
+      ctx.font = `${30 * scale}px ${fontFamily}`;
+      ctx.fillText(date, dateX * scale, dateY * scale);
 
-      // Signature
-      ctx.font = `italic 58px "Brush Script MT", cursive`;
-      ctx.fillText(signature, sigX, sigY);
+      // Signature (use brush script if available)
+      ctx.font = `italic ${58 * scale}px 'Brush Script MT', cursive`;
+      ctx.fillText(signature, sigX * scale, sigY * scale);
 
-            // Days
-      ctx.font = `30px ${fontFamily}`;
-      ctx.fillText(days, dayX, dayY);
+      // Days
+      ctx.font = `${30 * scale}px ${fontFamily}`;
+      ctx.fillText(days, dayX * scale, dayY * scale);
 
-      // Printed name + title
-      ctx.font = `28px ${fontFamily}`;
-      ctx.fillText(signature, sigX, sigY + 85);
-      ctx.fillText("Hellgate Prison Release Officer", sigX, sigY + 115);
+      // Printed name + title (scaled)
+      ctx.font = `${28 * scale}px ${fontFamily}`;
+      ctx.fillText(signature, sigX * scale, (sigY + 85) * scale);
+      ctx.fillText("Hellgate Prison Release Officer", sigX * scale, (sigY + 115) * scale);
 
-      // Generate QR Code
-      generateQRCode(prisoner, reg, date);
+      // Generate QR Code (draw scaled)
+      generateQRCode(prisoner, reg, date, scale);
     }
 
-    function generateQRCode(name, reg, date) {
+    function generateQRCode(name, reg, date, scale = 1) {
       // Clear previous QR if exists
       const oldQR = document.getElementById('qrContainer');
       if (oldQR) oldQR.remove();
@@ -185,10 +227,12 @@
       qrDiv.style.left = '-9999px';
       document.body.appendChild(qrDiv);
 
+      const qrSize = 150; // design CSS size
+
       new QRCode(qrDiv, {
         text: `Prisoner: ${name}\nReg: ${reg}\nRelease Date: ${date}`,
-        width: 150,
-        height: 150,
+        width: qrSize,
+        height: qrSize,
         colorDark: "#000000",
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.H
@@ -198,24 +242,109 @@
       setTimeout(() => {
         const qrCanvas = qrDiv.querySelector('canvas');
         if (qrCanvas) {
-          ctx.drawImage(qrCanvas, 550, 680, 180, 180);
+          // draw using CSS coordinates (scale applied by caller)
+          const x = 550 * scale;
+          const y = 680 * scale;
+          const size = qrSize * scale;
+          ctx.drawImage(qrCanvas, x, y, size, size);
         }
         qrDiv.remove();
       }, 100);
     }
 
     function downloadImage() {
-      const link = document.createElement('a');
-      const name = document.getElementById('prisoner').value.replace(/[^a-zA-Z0-9]/g, '_');
-      link.download = `Hellgate_Release_${name}.png`;
-      link.href = canvas.toDataURL('image/png', 1.0);
-      link.click();
+      // To create a 1:1 1024x1024 PNG, create a temporary canvas at 1024x1024
+      const temp = document.createElement('canvas');
+      temp.width = 1024;
+      temp.height = 1024;
+      const tctx = temp.getContext('2d');
+
+      // draw the background at native size if available
+      if (bgImage.complete) {
+        tctx.drawImage(bgImage, 0, 0, 1024, 1024);
+      } else {
+        tctx.fillStyle = '#000';
+        tctx.fillRect(0,0,1024,1024);
+      }
+
+      // Copy text and QR by re-rendering at 1024 space
+      const prisoner = document.getElementById('prisoner').value;
+      const reg = document.getElementById('reg').value;
+      const date = document.getElementById('date').value;
+      const signature = document.getElementById('signature').value;
+      const days = document.getElementById('days').value;
+      const fontFamily = document.getElementById('fontFamily').value;
+
+      const nameX = parseInt(document.getElementById('nameX').value);
+      const nameY = parseInt(document.getElementById('nameY').value);
+      const regX = parseInt(document.getElementById('regX').value);
+      const regY = parseInt(document.getElementById('regY').value);
+      const dateX = parseInt(document.getElementById('dateX').value);
+      const dateY = parseInt(document.getElementById('dateY').value);
+      const sigX = parseInt(document.getElementById('sigX').value);
+      const sigY = parseInt(document.getElementById('sigY').value);
+      const dayX = parseInt(document.getElementById('dayX').value);
+      const dayY = parseInt(document.getElementById('dayY').value);
+
+      tctx.fillStyle = '#000000';
+      tctx.textBaseline = 'top';
+
+      tctx.font = `italic 32px ${fontFamily}`;
+      tctx.fillText(prisoner, nameX, nameY);
+
+      tctx.font = `42px ${fontFamily}`;
+      tctx.fillText(reg, regX, regY);
+
+      tctx.font = `30px ${fontFamily}`;
+      tctx.fillText(date, dateX, dateY);
+
+      tctx.font = `italic 58px 'Brush Script MT', cursive`;
+      tctx.fillText(signature, sigX, sigY);
+
+      tctx.font = `30px ${fontFamily}`;
+      tctx.fillText(days, dayX, dayY);
+
+      tctx.font = `28px ${fontFamily}`;
+      tctx.fillText(signature, sigX, sigY + 85);
+      tctx.fillText("Hellgate Prison Release Officer", sigX, sigY + 115);
+
+      // Draw QR similarly by creating a temporary QR and drawing it
+      const qrDiv = document.createElement('div');
+      qrDiv.style.position = 'absolute';
+      qrDiv.style.left = '-9999px';
+      document.body.appendChild(qrDiv);
+
+      new QRCode(qrDiv, {
+        text: `Prisoner: ${prisoner}\nReg: ${reg}\nRelease Date: ${date}`,
+        width: 150,
+        height: 150,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      setTimeout(() => {
+        const qrCanvas = qrDiv.querySelector('canvas');
+        if (qrCanvas) {
+          tctx.drawImage(qrCanvas, 550, 680, 150, 150);
+        }
+        qrDiv.remove();
+
+        const link = document.createElement('a');
+        const name = document.getElementById('prisoner').value.replace(/[^a-zA-Z0-9]/g, '_');
+        link.download = `Hellgate_Release_${name}.png`;
+        link.href = temp.toDataURL('image/png', 1.0);
+        link.click();
+      }, 150);
     }
 
     // Auto-generate on input change
     document.querySelectorAll('input, select').forEach(el => {
       el.addEventListener('input', generateImage);
     });
+
+    // Also regenerate on window resize so the canvas backing store updates
+    window.addEventListener('resize', () => generateImage());
   </script>
 </body>
 </html>
