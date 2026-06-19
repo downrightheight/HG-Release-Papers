@@ -50,6 +50,7 @@
       background: #000;
       box-shadow: 0 0 20px rgba(0,0,0,0.8);
       flex: 1 1 1024px; /* allow canvas to grow/shrink in the flex container */
+      display: block; /* avoid baseline gaps inside flex */
     }
     .advanced { margin-top: 15px; }
     .advanced h3 { margin: 10px 0 5px; color: #aaa; }
@@ -127,11 +128,21 @@
     // Resize the canvas backing store to match its displayed size and devicePixelRatio
     function resizeCanvasForDisplay(canvas, ctx) {
       const dpr = window.devicePixelRatio || 1;
-      // clientWidth/clientHeight are the CSS pixel size
+      // clientWidth is the CSS pixel width
       const displayWidth = Math.max(1, Math.round(canvas.clientWidth));
-      const displayHeight = Math.max(1, Math.round(canvas.clientHeight));
-      const targetWidth = Math.round(displayWidth * dpr);
-      const targetHeight = Math.round(displayHeight * dpr);
+
+      // Force a square display: use the width as the height so the canvas is always 1:1 on-screen
+      const displaySize = displayWidth;
+
+      // Ensure the canvas CSS height matches the computed square size.
+      // This forces the element to appear square in CSS layout regardless of flex differences.
+      if (Math.round(canvas.clientHeight) !== displaySize) {
+        canvas.style.height = displaySize + 'px';
+      }
+
+      // Backing store size in device pixels
+      const targetWidth = Math.round(displaySize * dpr);
+      const targetHeight = Math.round(displaySize * dpr);
 
       if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
         canvas.width = targetWidth;
@@ -143,7 +154,7 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
 
-      return { displayWidth, displayHeight, dpr };
+      return { displayWidth: displaySize, displayHeight: displaySize, dpr };
     }
 
     function generateImage() {
