@@ -70,7 +70,7 @@
       <input type="text" id="reg" value="X0000">
 
       <label>Date of Release</label>
-      <input type="text" id="date" value="June 16, 2026">
+      <input type="text" id="date" value="">
 
       <label>Signature Name</label>
       <input type="text" id="signature" value="Emma O'Neil">
@@ -124,6 +124,21 @@
     bgImage.src = 'hellgate-background.png'; // ← Put your 1024x1024 background here
 
     bgImage.onload = () => generateImage();
+
+    // Set date field to current Pacific time date on page load
+    function setCurrentPacificDate() {
+      const now = new Date();
+      const pacificDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      const formattedDate = pacificDate.toLocaleDateString('en-US', options);
+      document.getElementById('date').value = formattedDate;
+    }
+
+    // Call on page load
+    window.addEventListener('load', () => {
+      setCurrentPacificDate();
+      generateImage();
+    });
 
     // Resize the canvas backing store to match its displayed size and devicePixelRatio
     function resizeCanvasForDisplay(canvas, ctx) {
