@@ -59,8 +59,8 @@
       <label>Prisoner Name</label>
       <input type="text" id="prisoner" value="Luna Voss">
 
-      <label>Prisoner Reg Number</label>
-      <input type="text" id="reg" value="HG-247-1337">
+      <label>Prisoner Number</label>
+      <input type="text" id="reg" value="X0000">
 
       <label>Date of Release</label>
       <input type="text" id="date" value="June 16, 2026">
@@ -88,12 +88,12 @@
         <small>Adjust as needed</small>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
           <label>Name X</label><input type="number" id="nameX" value="520">
-          <label>Name Y</label><input type="number" id="nameY" value="280">
-          <label>Reg X</label><input type="number" id="regX" value="520">
-          <label>Reg Y</label><input type="number" id="regY" value="340">
-          <label>Date X</label><input type="number" id="dateX" value="520">
-          <label>Date Y</label><input type="number" id="dateY" value="620">
-          <label>Signature X</label><input type="number" id="sigX" value="180">
+          <label>Name Y</label><input type="number" id="nameY" value="256">
+          <label>Reg X</label><input type="number" id="regX" value="536">
+          <label>Reg Y</label><input type="number" id="regY" value="209">
+          <label>Date X</label><input type="number" id="dateX" value="601">
+          <label>Date Y</label><input type="number" id="dateY" value="483">
+          <label>Signature X</label><input type="number" id="sigX" value="72">
           <label>Signature Y</label><input type="number" id="sigY" value="820">
         </div>
       </div>
@@ -137,7 +137,7 @@
       ctx.textBaseline = 'top';
 
       // Prisoner Name
-      ctx.font = `bold 48px ${fontFamily}`;
+      ctx.font = `italic 32px ${fontFamily}`;
       ctx.fillText(prisoner, nameX, nameY);
 
       // Reg Number
@@ -145,7 +145,7 @@
       ctx.fillText(reg, regX, regY);
 
       // Date
-      ctx.font = `38px ${fontFamily}`;
+      ctx.font = `30px ${fontFamily}`;
       ctx.fillText(date, dateX, dateY);
 
       // Signature
@@ -154,7 +154,7 @@
 
       // Printed name + title
       ctx.font = `28px ${fontFamily}`;
-      ctx.fillText("Emma O'Neil", sigX, sigY + 85);
+      ctx.fillText(signature, sigX, sigY + 85);
       ctx.fillText("Hellgate Prison Release Officer", sigX, sigY + 115);
 
       // Generate QR Code
