@@ -225,8 +225,10 @@
       ctx.fillText(date, dateX * scale, dateY * scale);
 
       // Signature (use brush script if available)
+      ctx.fillStyle = '#0066ff'; // Blue color
       ctx.font = `italic ${58 * scale}px 'Brush Script MT', cursive`;
       ctx.fillText(signature, sigX * scale, sigY * scale);
+      ctx.fillStyle = '#000000'; // Reset to black for other text
 
       // Days
       ctx.font = `${30 * scale}px ${fontFamily}`;
@@ -324,8 +326,10 @@
       tctx.font = `30px ${fontFamily}`;
       tctx.fillText(date, dateX, dateY);
 
+      tctx.fillStyle = '#0066ff'; // Blue color
       tctx.font = `italic 58px 'Brush Script MT', cursive`;
       tctx.fillText(signature, sigX, sigY);
+      tctx.fillStyle = '#000000'; // Reset to black for other text
 
       tctx.font = `30px ${fontFamily}`;
       tctx.fillText(days, dayX, dayY);
