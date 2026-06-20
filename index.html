@@ -78,22 +78,11 @@
       overflow-y: auto;
       border: 1px solid #0a8a0a;
     }
-    .view-mode {
-      background: #0a4a0a;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      border: 2px solid #0a8a0a;
-    }
-    .view-mode h3 {
-      margin: 0 0 10px 0;
-      color: #0f0;
-    }
   </style>
 </head>
 <body>
-  <div id="viewModeContainer" style="display:none;">
-    <canvas id="canvas" width="1024" height="1024"></canvas>
+  <div id="viewModeContainer" style="display:none; text-align: center;">
+    <canvas id="viewCanvas" width="1024" height="1024" style="width: 100%; max-width: 1024px; height: auto; aspect-ratio: 1/1;"></canvas>
   </div>
 
   <div id="editModeContainer">
@@ -186,6 +175,9 @@
         // Switch to view mode UI
         document.getElementById('editModeContainer').style.display = 'none';
         document.getElementById('viewModeContainer').style.display = 'block';
+        
+        // Use viewCanvas for rendering in view mode
+        renderToCanvas(document.getElementById('viewCanvas'));
       }
     }
 
@@ -206,7 +198,9 @@
         fontFamily
       });
 
-      return `${window.location.pathname}?${params.toString()}`;
+      // Get the full URL (origin + pathname)
+      const fullURL = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+      return fullURL;
     }
 
     function updateQRPreview() {
@@ -281,19 +275,19 @@
       return { displayWidth: displaySize, displayHeight: displaySize, dpr };
     }
 
-    function generateImage() {
-      // ensure canvas internal size matches CSS size (and DPR) and get display size
-      const { displayWidth, displayHeight } = resizeCanvasForDisplay(canvas, ctx);
+    function renderToCanvas(targetCanvas) {
+      const targetCtx = targetCanvas.getContext('2d');
+      const { displayWidth, displayHeight } = resizeCanvasForDisplay(targetCanvas, targetCtx);
 
       // Clear using CSS-coordinates (transform maps them correctly)
-      ctx.clearRect(0, 0, displayWidth, displayHeight);
+      targetCtx.clearRect(0, 0, displayWidth, displayHeight);
 
       // Draw background scaled to current displayed size
       if (bgImage.complete) {
-        ctx.drawImage(bgImage, 0, 0, displayWidth, displayHeight);
+        targetCtx.drawImage(bgImage, 0, 0, displayWidth, displayHeight);
       } else {
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, displayWidth, displayHeight);
+        targetCtx.fillStyle = '#000';
+        targetCtx.fillRect(0, 0, displayWidth, displayHeight);
       }
 
       const prisoner = document.getElementById('prisoner').value;
@@ -318,41 +312,45 @@
       // Scale factor from the design (1024) to the current display size
       const scale = displayWidth / 1024;
 
-      ctx.fillStyle = '#000000';
-      ctx.textBaseline = 'top';
+      targetCtx.fillStyle = '#000000';
+      targetCtx.textBaseline = 'top';
 
       // Prisoner Name (scale font sizes and positions)
-      ctx.font = `italic ${32 * scale}px ${fontFamily}`;
-      ctx.fillText(prisoner, nameX * scale, nameY * scale);
+      targetCtx.font = `italic ${32 * scale}px ${fontFamily}`;
+      targetCtx.fillText(prisoner, nameX * scale, nameY * scale);
 
       // Reg Number
-      ctx.font = `${42 * scale}px ${fontFamily}`;
-      ctx.fillText(reg, regX * scale, regY * scale);
+      targetCtx.font = `${42 * scale}px ${fontFamily}`;
+      targetCtx.fillText(reg, regX * scale, regY * scale);
 
       // Date
-      ctx.font = `${30 * scale}px ${fontFamily}`;
-      ctx.fillText(date, dateX * scale, dateY * scale);
+      targetCtx.font = `${30 * scale}px ${fontFamily}`;
+      targetCtx.fillText(date, dateX * scale, dateY * scale);
 
       // Signature (use brush script if available)
-      ctx.fillStyle = '#0066ff'; // Blue color
-      ctx.font = `italic ${58 * scale}px 'Brush Script MT', cursive`;
-      ctx.fillText(signature, sigX * scale, sigY * scale);
-      ctx.fillStyle = '#000000'; // Reset to black for other text
+      targetCtx.fillStyle = '#0066ff'; // Blue color
+      targetCtx.font = `italic ${58 * scale}px 'Brush Script MT', cursive`;
+      targetCtx.fillText(signature, sigX * scale, sigY * scale);
+      targetCtx.fillStyle = '#000000'; // Reset to black for other text
 
       // Days
-      ctx.font = `${30 * scale}px ${fontFamily}`;
-      ctx.fillText(days, dayX * scale, dayY * scale);
+      targetCtx.font = `${30 * scale}px ${fontFamily}`;
+      targetCtx.fillText(days, dayX * scale, dayY * scale);
 
       // Printed name + title (scaled)
-      ctx.font = `${28 * scale}px ${fontFamily}`;
-      ctx.fillText(signature, sigX * scale, (sigY + 85) * scale);
-      ctx.fillText("Hellgate Prison Release Officer", sigX * scale, (sigY + 115) * scale);
+      targetCtx.font = `${28 * scale}px ${fontFamily}`;
+      targetCtx.fillText(signature, sigX * scale, (sigY + 85) * scale);
+      targetCtx.fillText("Hellgate Prison Release Officer", sigX * scale, (sigY + 115) * scale);
 
       // Generate QR Code (draw scaled)
-      generateQRCode(prisoner, reg, date, scale);
+      generateQRCode(prisoner, reg, date, scale, targetCtx);
     }
 
-    function generateQRCode(name, reg, date, scale = 1) {
+    function generateImage() {
+      renderToCanvas(canvas);
+    }
+
+    function generateQRCode(name, reg, date, scale = 1, targetCtx = ctx) {
       // Clear previous QR if exists
       const oldQR = document.getElementById('qrContainer');
       if (oldQR) oldQR.remove();
@@ -386,7 +384,7 @@
           const x = 415 * scale;
           const y = 600 * scale;
           const size = qrSize * scale;
-          ctx.drawImage(qrCanvas, x, y, size, size);
+          targetCtx.drawImage(qrCanvas, x, y, size, size);
         }
         qrDiv.remove();
       }, 100);
