@@ -54,6 +54,17 @@
     }
     .advanced { margin-top: 15px; }
     .advanced h3 { margin: 10px 0 5px; color: #aaa; }
+    .view-mode {
+      background: #0a4a0a;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border: 2px solid #0a8a0a;
+    }
+    .view-mode h3 {
+      margin: 0 0 10px 0;
+      color: #0f0;
+    }
   </style>
 </head>
 <body>
@@ -62,6 +73,12 @@
   <div class="container">
     <!-- Controls -->
     <div class="form">
+      <div id="viewModeIndicator" class="view-mode" style="display:none;">
+        <h3>View Mode</h3>
+        <p>Viewing saved release papers. Click "Edit Mode" to modify.</p>
+        <button onclick="enterEditMode()" style="background: #0066ff; margin-top: 10px;">Edit Mode</button>
+      </div>
+
       <h2>Prisoner Info</h2>
       <label>Prisoner Name</label>
       <input type="text" id="prisoner" value="Luna Voss">
@@ -121,7 +138,56 @@
       const params = new URLSearchParams(window.location.search);
       return params.get('advanced') === 'true';
     }
-    
+
+    function isViewMode() {
+      const params = new URLSearchParams(window.location.search);
+      return params.has('prisoner');
+    }
+
+    function loadFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('prisoner')) {
+        document.getElementById('prisoner').value = params.get('prisoner') || 'Luna Voss';
+        document.getElementById('reg').value = params.get('reg') || 'X0000';
+        document.getElementById('date').value = params.get('date') || '';
+        document.getElementById('signature').value = params.get('signature') || 'Emma O\'Neil';
+        document.getElementById('days').value = params.get('days') || '1';
+        document.getElementById('fontFamily').value = params.get('fontFamily') || 'Arial';
+        
+        // Disable editing in view mode
+        document.querySelectorAll('input, select').forEach(el => {
+          el.disabled = true;
+        });
+        document.querySelectorAll('button').forEach(btn => {
+          btn.disabled = true;
+        });
+        document.getElementById('viewModeIndicator').style.display = 'block';
+      }
+    }
+
+    function enterEditMode() {
+      window.location.href = window.location.pathname;
+    }
+
+    function generateShareURL() {
+      const prisoner = document.getElementById('prisoner').value;
+      const reg = document.getElementById('reg').value;
+      const date = document.getElementById('date').value;
+      const signature = document.getElementById('signature').value;
+      const days = document.getElementById('days').value;
+      const fontFamily = document.getElementById('fontFamily').value;
+
+      const params = new URLSearchParams({
+        prisoner,
+        reg,
+        date,
+        signature,
+        days,
+        fontFamily
+      });
+
+      return `${window.location.pathname}?${params.toString()}`;
+    }
     
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
@@ -143,7 +209,12 @@
 
     // Call on page load
     window.addEventListener('load', () => {
-      setCurrentPacificDate();
+      loadFromURL();
+      
+      if (!isViewMode()) {
+        setCurrentPacificDate();
+      }
+      
       generateImage();
       
       if (isAdvancedEnabled()) {
@@ -269,8 +340,11 @@
 
       const qrSize = 150; // design CSS size
 
+      // Generate URL that includes all current form data
+      const shareURL = generateShareURL();
+
       new QRCode(qrDiv, {
-        text: `Prisoner: ${name}\nReg: ${reg}\nRelease Date: ${date}`,
+        text: shareURL,
         width: qrSize,
         height: qrSize,
         colorDark: "#000000",
@@ -356,8 +430,10 @@
       qrDiv.style.left = '-9999px';
       document.body.appendChild(qrDiv);
 
+      const shareURL = generateShareURL();
+
       new QRCode(qrDiv, {
-        text: `Prisoner: ${prisoner}\nReg: ${reg}\nRelease Date: ${date}`,
+        text: shareURL,
         width: 150,
         height: 150,
         colorDark: "#000000",
