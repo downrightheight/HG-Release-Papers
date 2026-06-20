@@ -93,7 +93,7 @@
       <button onclick="generateImage()">Generate Preview</button>
       <button onclick="downloadImage()">Download 1024×1024 PNG</button>
 
-      <div class="advanced">
+      <div class="advanced" id = "advancedSection" style="display:none;">
         <h3>Advanced Positioning</h3>
         <small>Adjust as needed</small>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
@@ -116,6 +116,13 @@
   </div>
 
   <script>
+    
+    function isAdvancedEnabled() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('advanced') === 'true';
+    }
+    
+    
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     let bgImage = new Image();
@@ -138,6 +145,11 @@
     window.addEventListener('load', () => {
       setCurrentPacificDate();
       generateImage();
+      
+      if (isAdvancedEnabled()) {
+        document.getElementById('advancedSection').style.display = 'block';
+      }
+     
     });
 
     // Resize the canvas backing store to match its displayed size and devicePixelRatio
